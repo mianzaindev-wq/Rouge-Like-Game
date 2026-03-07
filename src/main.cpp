@@ -1,106 +1,88 @@
 #include <iostream>
+#include "renderer.h"
+#include "player.h"
 
-enum class PlayerStatus { Healthy, Hurt, Wounded, Critical, Dead };
-enum class Direction    { North, South, East, West };
-enum class GameState    { Running, PlayerDead, PlayerQuit };
+enum class GameState { Running, PlayerDead, PlayerQuit };
 
-int main()
+int main ()
 {
-    constexpr int   WINDOW_WIDTH  = 80;
-    constexpr int   WINDOW_HEIGHT = 24;
-    constexpr float VERSION       = 0.4f;
+    constexpr int WINDOW_WIDTH = 80;
+    constexpr int WINDOW_HEIGHT = 24;
+    constexpr float GAME_VERSION = 0.5f;
 
-    int   playerHealth    = 100;
-    int   playerMaxHealth = 100;
-    int   playerGold      = 0;
-    float playerSpeed     = 1.0f;
-    bool  playerAlive     = true;
-    char  playerSymbol    = '@';
-    int   currentRoom     = 1;
-
+    Player player;
     GameState gameState = GameState::Running;
 
-    std::cout << "=== RogueEngine v" << VERSION << " ===\n";
-    std::cout << "World: " << WINDOW_WIDTH << "x" << WINDOW_HEIGHT << "\n\n";
+    renderHeader (GAME_VERSION, WINDOW_WIDTH, WINDOW_HEIGHT);
 
     while (gameState == GameState::Running)
     {
-        // Determine status
-        PlayerStatus status;
-        if      (playerHealth <= 0)  status = PlayerStatus::Dead;
-        else if (playerHealth <= 25) status = PlayerStatus::Critical;
-        else if (playerHealth <= 50) status = PlayerStatus::Wounded;
-        else if (playerHealth <= 75) status = PlayerStatus::Hurt;
-        else                         status = PlayerStatus::Healthy;
-
         // Render
-        std::cout << "--- Room " << currentRoom << " ---\n";
-        std::cout << playerSymbol << "  HP: " << playerHealth
-                  << "/" << playerMaxHealth
-                  << "  Gold: " << playerGold << "\n";
-
-        std::cout << "Status: ";
-        switch (status)
-        {
-            case PlayerStatus::Healthy:  std::cout << "Healthy\n";  break;
-            case PlayerStatus::Hurt:     std::cout << "Hurt\n";     break;
-            case PlayerStatus::Wounded:  std::cout << "Wounded\n";  break;
-            case PlayerStatus::Critical: std::cout << "Critical!\n"; break;
-            case PlayerStatus::Dead:     std::cout << "Dead\n";     break;
-        }
-
-        std::cout << "\n1) Move North  2) Move South  "
-                  << "3) Rest (+20 HP)  4) Quit\n> ";
+        renderRoom(player.room);  
+        renderPlayer(player);
+        renderStatusBar(player);
+        renderMenu();
 
         // Input
-        int choice = 0;
+        int choice;
         std::cin >> choice;
+        std::cout << "\n";
 
         // Update
         switch (choice)
         {
             case 1:
-                ++currentRoom;
-                playerHealth -= 10;
-                playerGold   += 5;
-                std::cout << "You move North. Found 5 gold.\n\n";
+                ++player.room;
+                takeDamage(player, 10);
+                player.gold += 5;
+                std::cout << "You move North and encounter a trap! You take 10 damage but find 5 gold.\n";
                 break;
+        
             case 2:
-                if (currentRoom > 1)
+                if (player.room > 1)
                 {
-                    --currentRoom;
-                    std::cout << "You move South.\n\n";
+                    --player.room;
+                    std::cout << "You move South. \n\n";
+                    break;
                 }
                 else
-                    std::cout << "You cannot go further South.\n\n";
+                {
+                    std::cout << "You can't move further South.\n\n";
+                }
                 break;
+
             case 3:
-                playerHealth += 20;
-                if (playerHealth > playerMaxHealth)
-                    playerHealth = playerMaxHealth;
-                std::cout << "You rest. HP restored.\n\n";
+                heal(player, 20);
+                std::cout << "You rest and recover 20 HP.\n\n";
                 break;
+
             case 4:
                 gameState = GameState::PlayerQuit;
-                break;
-            default:
-                std::cout << "Invalid choice.\n\n";
+                std::cout << "You quit the game. Goodbye!\n";
                 break;
         }
 
-        if (playerHealth <= 0)
+        if (!isAlive(player))
+        {
             gameState = GameState::PlayerDead;
+            std::cout << "You have died. Game Over.\n";
+        }
     }
 
-    // End screen
+    //End Screen
     switch (gameState)
     {
-        case GameState::PlayerDead:
-            std::cout << "=== YOU DIED === Reached room " << currentRoom << "\n";
+        case GameState::PlayerDead: 
+            std::cout << "=== YOU DIED === Reached room "
+                      << player.room << "\n";
             break;
+
         case GameState::PlayerQuit:
-            std::cout << "=== QUIT === Gold collected: " << playerGold << "\n";
+            std::cout << "=== GAME QUIT === Reached room "
+                      << player.room << " with "
+                      << player.gold << " gold.\n";
             break;
+
         default:
             break;
     }
