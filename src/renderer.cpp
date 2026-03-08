@@ -52,3 +52,33 @@ void renderRoom(int roomNumber)
     }
     std::cout << "\n";
 }
+
+void renderMap(const Room& room, int playerRow, int playerCol)
+{
+    std::cout << "\n=== " << room.name << " ===\n";
+
+    for (int row = 0; row < MAP_HEIGHT; ++row)
+    {
+        for (int col = 0; col < MAP_WIDTH; ++col)
+        {
+            // Draw player position
+            if (row == playerRow && col == playerCol)
+            {
+                std::cout << "@ ";
+                continue;
+            }
+
+            switch (room.tiles[row][col])
+            {
+                case static_cast<int>(TileType::Floor):  std::cout << ". "; break;
+                case static_cast<int>(TileType::Wall):   std::cout << "# "; break;
+                case static_cast<int>(TileType::Door):   std::cout << "D "; break;
+                case static_cast<int>(TileType::Chest):  std::cout << "C "; break;
+                case static_cast<int>(TileType::Stairs): std::cout << "S "; break;
+                default:                                  std::cout << "? "; break;
+            }
+        }
+        std::cout << "\n";
+    }
+    std::cout << "\n";
+}

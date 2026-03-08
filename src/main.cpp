@@ -1,88 +1,115 @@
 #include <iostream>
-#include "renderer.h"
 #include "player.h"
+#include "renderer.h"
+#include "map.h"
 
 enum class GameState { Running, PlayerDead, PlayerQuit };
 
-int main ()
+int main()
 {
-    constexpr int WINDOW_WIDTH = 80;
-    constexpr int WINDOW_HEIGHT = 24;
-    constexpr float GAME_VERSION = 0.5f;
+    constexpr int   WINDOW_WIDTH  = 80;
+    constexpr int   WINDOW_HEIGHT = 24;
+    constexpr float VERSION       = 0.6f;
 
+    // Initialize player
     Player player;
+    int playerRow = 3;
+    int playerCol = 2;
+
+    // Initialize room
+    Room currentRoom;
+    initRoom(currentRoom, "Entrance Hall");
+
+    // Place special tiles
+    setTile(currentRoom, 1, 5,
+            static_cast<int>(TileType::Chest));
+    setTile(currentRoom, 6, 6,
+            static_cast<int>(TileType::Stairs));
+    setTile(currentRoom, 0, 6,
+            static_cast<int>(TileType::Door));
+
     GameState gameState = GameState::Running;
 
-    renderHeader (GAME_VERSION, WINDOW_WIDTH, WINDOW_HEIGHT);
+    renderHeader(VERSION, WINDOW_WIDTH, WINDOW_HEIGHT);
 
     while (gameState == GameState::Running)
     {
         // Render
-        renderRoom(player.room);  
+        renderMap(currentRoom, playerRow, playerCol);
         renderPlayer(player);
         renderStatusBar(player);
-        renderMenu();
+
+        std::cout << "Move: [W]orth [S]outh [A]est [D]ast"
+                  << "  [R]est  [Q]uit\n> ";
 
         // Input
-        int choice;
-        std::cin >> choice;
+        char input = ' ';
+        std::cin >> input;
         std::cout << "\n";
 
+        // Store previous position
+        int newRow = playerRow;
+        int newCol = playerCol;
+
         // Update
-        switch (choice)
+        switch (input)
         {
-            case 1:
-                ++player.room;
-                takeDamage(player, 10);
-                player.gold += 5;
-                std::cout << "You move North and encounter a trap! You take 10 damage but find 5 gold.\n";
-                break;
-        
-            case 2:
-                if (player.room > 1)
-                {
-                    --player.room;
-                    std::cout << "You move South. \n\n";
-                    break;
-                }
-                else
-                {
-                    std::cout << "You can't move further South.\n\n";
-                }
-                break;
-
-            case 3:
+            case 'w': case 'W': --newRow; break;
+            case 's': case 'S': ++newRow; break;
+            case 'a': case 'A': --newCol; break;
+            case 'd': case 'D': ++newCol; break;
+            case 'r': case 'R':
                 heal(player, 20);
-                std::cout << "You rest and recover 20 HP.\n\n";
+                std::cout << "You rest. HP restored.\n\n";
                 break;
-
-            case 4:
+            case 'q': case 'Q':
                 gameState = GameState::PlayerQuit;
-                std::cout << "You quit the game. Goodbye!\n";
                 break;
+            default:
+                std::cout << "Unknown command.\n\n";
+                break;
+        }
+
+        // Only move if walkable
+        if (isWalkable(currentRoom, newRow, newCol))
+        {
+            playerRow = newRow;
+            playerCol = newCol;
+
+            // Check tile events
+            int tile = getTile(currentRoom, playerRow, playerCol);
+            if (tile == static_cast<int>(TileType::Chest))
+            {
+                player.gold += 25;
+                std::cout << "You found a chest! +25 gold.\n\n";
+                setTile(currentRoom, playerRow, playerCol,
+                        static_cast<int>(TileType::Floor));
+            }
+            else if (tile == static_cast<int>(TileType::Stairs))
+            {
+                std::cout << "You found the stairs! "
+                          << "Deeper dungeon coming soon...\n\n";
+            }
+        }
+        else
+        {
+            std::cout << "Blocked.\n\n";
         }
 
         if (!isAlive(player))
-        {
             gameState = GameState::PlayerDead;
-            std::cout << "You have died. Game Over.\n";
-        }
     }
 
-    //End Screen
+    // End screen
     switch (gameState)
     {
-        case GameState::PlayerDead: 
-            std::cout << "=== YOU DIED === Reached room "
-                      << player.room << "\n";
+        case GameState::PlayerDead:
+            std::cout << "=== YOU DIED ===\n";
             break;
-
         case GameState::PlayerQuit:
-            std::cout << "=== GAME QUIT === Reached room "
-                      << player.room << " with "
-                      << player.gold << " gold.\n";
+            std::cout << "=== QUIT === Gold: "
+                      << player.gold << "\n";
             break;
-
         default:
             break;
     }
