@@ -1,6 +1,7 @@
 #pragma once
 
-#include "player.h" //Renderer needs to know about player
+#include "player.h"  //Renderer needs to know about player stats
+#include "enemy.h"   //Renderer needs to know about enemies
 #include "map.h"    //Renderer needs to know about rooms
 
 //All display/output functions
@@ -9,4 +10,6 @@ void renderPlayer(const Player& player);
 void renderStatusBar(const Player& player);
 void renderMenu();
 void renderRoom(int roomNumber);
-void renderMap(const Room& room, int playerRow, int playerCol);
+void renderMap(const Room& room, const Player& player,
+               const Enemy enemies[], int enemyCount);
+void renderEnemies(const Enemy enemies[], int enemyCount);
