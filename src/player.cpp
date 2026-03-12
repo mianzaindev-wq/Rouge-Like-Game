@@ -31,3 +31,8 @@ void heal(Player& player, int amount)
     if (player.health > player.maxHealth)
         player.health = player.maxHealth;
 }
+
+bool hasTarget(const Player& player)
+{
+    return player.target != nullptr && player.target->alive;
+}
